@@ -3,148 +3,203 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>内蒙古自驾游 2026-10 · 路线图</title>
+<title>内蒙古自驾游 2026-10</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
-  #map { width: 100vw; height: 100vh; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif; overflow: hidden; }
+  #map { position: absolute; inset: 0; width: 100vw; height: 100vh; z-index: 1; }
+
   .day-marker {
     background: white;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 13px;
-    color: #333;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; color: #333;
     border: 3px solid #FF6B35;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    text-align: center;
-    line-height: 1;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.15s;
   }
+  .day-marker:hover, .day-marker.active { transform: scale(1.2); }
   .day-marker.start { border-color: #10B981; background: #10B981; color: white; }
   .day-marker.end { border-color: #EF4444; background: #EF4444; color: white; }
   .day-marker.loop { border-color: #3B82F6; }
   .day-marker.return { border-color: #F59E0B; }
-  .legend {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(255,255,255,0.95);
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-    z-index: 1000;
-    max-width: 180px;
-  }
-  .legend h3 { margin: 0 0 6px 0; font-size: 13px; }
-  .legend .row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
-  .legend .line { width: 24px; height: 3px; border-radius: 2px; }
+
   .title-bar {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(255,255,255,0.95);
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-    z-index: 1000;
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(255,255,255,0.96); padding: 8px 12px;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 500;
   }
   .title-bar .sub { font-size: 11px; font-weight: 400; color: #666; margin-top: 2px; }
-  .leaflet-popup-content { margin: 10px 12px; font-size: 13px; line-height: 1.5; }
-  .leaflet-popup-content strong { color: #FF6B35; }
+
+  .legend {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(255,255,255,0.96); padding: 8px 10px;
+    border-radius: 10px; font-size: 11px; z-index: 500;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .legend .row { display: flex; align-items: center; gap: 5px; margin: 2px 0; }
+  .legend .line { width: 20px; height: 3px; border-radius: 2px; }
+
+  /* Detail panel */
+  #panel {
+    position: absolute; top: 0; right: 0;
+    width: 380px; max-width: 90vw; height: 100vh;
+    background: white; z-index: 1000;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    transform: translateX(100%); transition: transform 0.28s ease;
+    overflow-y: auto;
+    padding: 24px 20px 40px 20px;
+  }
+  #panel.open { transform: translateX(0); }
+  #panel .close {
+    position: sticky; top: 0; float: right;
+    width: 32px; height: 32px; border-radius: 50%; background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; color: #666; border: none;
+    z-index: 1;
+  }
+  #panel h2 { margin: 0 0 4px 0; font-size: 20px; color: #FF6B35; }
+  #panel .date { color: #888; font-size: 13px; margin-bottom: 16px; }
+  #panel .drive-box {
+    background: #FFF4EE; padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; margin-bottom: 16px; color: #C2410C;
+  }
+  #panel h3 { font-size: 14px; margin: 16px 0 6px 0; color: #333; font-weight: 600; }
+  #panel ul { margin: 4px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+  #panel .info { font-size: 13px; line-height: 1.6; color: #444; }
+  #panel .tips {
+    background: #FEF9C3; padding: 10px 12px; border-radius: 8px;
+    font-size: 12px; color: #713F12; margin-top: 16px;
+    border-left: 3px solid #EAB308;
+  }
+
+  @media (max-width: 480px) {
+    #panel { width: 100vw; }
+    .title-bar { font-size: 12px; padding: 6px 10px; }
+    .legend { font-size: 10px; padding: 6px 8px; }
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
+
 <div class="title-bar">
   🏔️ 内蒙古自驾游 2026-10
-  <div class="sub">9/19 – 10/5 · 17 天 · 约 5165 km</div>
+  <div class="sub">9/19 – 10/3 · 15 天 · ~5000 km · 点标记看当天详情</div>
 </div>
+
 <div class="legend">
-  <h3>路线说明</h3>
-  <div class="row"><div class="line" style="background:#FF6B35"></div>去程 (Day 1-2)</div>
-  <div class="row"><div class="line" style="background:#3B82F6"></div>呼伦贝尔环线</div>
+  <div class="row"><div class="line" style="background:#FF6B35"></div>去程</div>
+  <div class="row"><div class="line" style="background:#3B82F6"></div>环线</div>
   <div class="row"><div class="line" style="background:#F59E0B"></div>回程</div>
-  <div class="row"><div class="line" style="background:#999;border-top:2px dashed #666;height:0"></div>边境段（估算）</div>
+  <div class="row"><div class="line" style="background:#888;border-top:2px dashed #666;height:0"></div>边境估算</div>
 </div>
+
+<div id="panel">
+  <button class="close" onclick="closePanel()">✕</button>
+  <div id="panel-content"></div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const PHASE_COLORS = {
-  outbound: '#FF6B35',
-  loop: '#3B82F6',
-  return: '#F59E0B'
-};
+const PHASE_COLORS = { outbound: '#FF6B35', loop: '#3B82F6', return: '#F59E0B' };
 
-// 高德坐标 → WGS84 大致偏移修正（GCJ-02 → WGS84 反解）
-// 用于 leaflet + 高德瓦片时对齐（因为我们用高德瓦片，可以直接用 GCJ-02 坐标不用转）
-function gcj02_to_wgs84(lng, lat) {
-  return [lat, lng]; // 用高德瓦片就不转
-}
+// 东北+内蒙区域，初始 bounds
+const REGION_BOUNDS = [[38.5, 117.0], [52.0, 126.0]];
 
 const map = L.map('map', {
   zoomControl: true,
-  attributionControl: false
-}).setView([46.5, 121.5], 6);
+  attributionControl: false,
+  minZoom: 5, maxZoom: 12,
+}).fitBounds(REGION_BOUNDS);
 
-// 高德地图瓦片（普通版）
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
   subdomains: '1234',
   maxZoom: 18,
-  attribution: '© 高德地图'
 }).addTo(map);
 
-// Load routes
+const panel = document.getElementById('panel');
+const panelContent = document.getElementById('panel-content');
+let activeMarker = null;
+
+function showDay(day) {
+  const html = `
+    <h2>Day ${day.day}: ${day.name}</h2>
+    <div class="date">${day.date}</div>
+    <div class="drive-box">🚗 车程：${day.drive}</div>
+    <h3>🎯 今天玩什么</h3>
+    <ul>${day.highlights.map(h => `<li>${h}</li>`).join('')}</ul>
+    <h3>🍜 吃什么</h3>
+    <div class="info">${day.food}</div>
+    <h3>🛏️ 住哪</h3>
+    <div class="info">${day.stay}</div>
+    <div class="tips">💡 ${day.tips}</div>
+  `;
+  panelContent.innerHTML = html;
+  panel.classList.add('open');
+}
+
+function closePanel() {
+  panel.classList.remove('open');
+  if (activeMarker) {
+    const el = activeMarker.getElement()?.querySelector('.day-marker');
+    if (el) el.classList.remove('active');
+  }
+  activeMarker = null;
+}
+
 fetch('routes.json').then(r => r.json()).then(data => {
-  const bounds = [];
-  
-  // Draw polylines
+  // 路线
   data.segments.forEach(seg => {
     const color = PHASE_COLORS[seg.phase] || '#666';
-    const pts = seg.polyline.map(p => gcj02_to_wgs84(p[1], p[0]));
-    const opts = {
-      color: color,
-      weight: 5,
-      opacity: 0.85,
-    };
-    if (seg.fallback) {
-      opts.dashArray = '8, 8';
-      opts.opacity = 0.6;
-    }
-    const line = L.polyline(pts, opts).addTo(map);
-    const distText = seg.distance_km ? `${Math.round(seg.distance_km)}km / ${seg.duration_h.toFixed(1)}h` : '边境段（约 130-380km）';
-    line.bindPopup(`<strong>${seg.label}</strong><br>${distText}${seg.fallback ? '<br><em>高德边境限制，为估算直线</em>' : ''}`);
-    pts.forEach(p => bounds.push(p));
+    const pts = seg.polyline.map(p => [p[0], p[1]]);
+    const opts = { color: color, weight: 4, opacity: 0.85 };
+    if (seg.fallback) { opts.dashArray = '8, 8'; opts.opacity = 0.6; }
+    L.polyline(pts, opts).addTo(map);
   });
-  
-  // Draw stop markers
-  data.stops.forEach((stop, i) => {
-    const [lat, lng] = gcj02_to_wgs84(stop.lng, stop.lat);
+
+  // 每日 marker
+  data.days.forEach((day, i) => {
     let cls = 'day-marker';
-    if (i === 0) cls += ' start';
-    else if (i === data.stops.length - 1) cls += ' end';
-    else if (i <= 2) cls += '';
-    else if (i <= 7) cls += ' loop';
-    else cls += ' return';
-    
+    if (i === 0) cls += ' ' + (day.phase);
+    else if (i === data.days.length - 1) cls += ' end';
+    else if (day.phase) cls += ' ' + day.phase;
+
     const icon = L.divIcon({
       className: '',
-      html: `<div class="${cls}">${stop.day.replace('Day ', 'D')}</div>`,
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
+      html: `<div class="${cls}" data-day="${day.day}">D${day.day}</div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
     });
-    L.marker([lat, lng], { icon }).addTo(map)
-      .bindPopup(`<strong>${stop.name}</strong> · ${stop.day}<br>${stop.note}`);
-    bounds.push([lat, lng]);
+    const m = L.marker([day.lat, day.lng], { icon }).addTo(map);
+    m.on('click', () => {
+      if (activeMarker) {
+        const oldEl = activeMarker.getElement()?.querySelector('.day-marker');
+        if (oldEl) oldEl.classList.remove('active');
+      }
+      const newEl = m.getElement()?.querySelector('.day-marker');
+      if (newEl) newEl.classList.add('active');
+      activeMarker = m;
+      showDay(day);
+    });
   });
-  
-  map.fitBounds(bounds, { padding: [40, 40] });
+
+  // 起点标记（大连）加个特殊 D0
+  const startIcon = L.divIcon({
+    className: '',
+    html: `<div class="day-marker start">出发</div>`,
+    iconSize: [40, 40], iconAnchor: [20, 20]
+  });
+  L.marker([38.913962, 121.614786], { icon: startIcon }).addTo(map)
+    .bindPopup('<strong>大连</strong> · 起点');
 });
+
+// 点地图空白关闭 panel
+map.on('click', closePanel);
 </script>
 </body>
 </html>
