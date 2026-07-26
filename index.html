@@ -2,115 +2,325 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>内蒙古自驾游 2026-10</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<title>内蒙古自驾游 · 秋 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif; overflow: hidden; background: #f5f5f7; }
-  #map { position: absolute; top: 0; left: 0; right: 0; bottom: 260px; z-index: 1; }
+  :root {
+    /* 秋色 palette — 苔藓、燕麦、枫、暮云 */
+    --ink:        #1a1f1a;    /* 深墨绿黑 */
+    --ink-2:      #3a423a;
+    --paper:      #f6f2ea;    /* 燕麦纸 */
+    --paper-2:    #ede7dc;
+    --moss:       #4a5d3a;    /* 苔藓绿（去程/自然）*/
+    --maple:      #b8593b;    /* 枫红（环线/高潮）*/
+    --amber:      #a8823a;    /* 琥珀（回程）*/
+    --dust:       #8a8578;    /* 暮云灰 */
+    --line:       rgba(26,31,26,0.12);
+    --line-2:     rgba(26,31,26,0.06);
 
+    --font-serif: 'Fraunces', 'Noto Serif SC', 'Songti SC', Georgia, serif;
+    --font-sans:  'Noto Sans SC', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background: var(--paper);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #map {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 320px;
+    z-index: 1; background: var(--paper);
+  }
+
+  /* 顶栏 */
+  .title-bar {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(246,242,234,0.94);
+    padding: 10px 16px;
+    border-radius: 2px;
+    z-index: 500;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+  }
+  .title-bar .brand {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .title-bar .brand em {
+    font-style: italic;
+    color: var(--maple);
+    font-weight: 400;
+  }
+  .title-bar .sub {
+    font-size: 10px;
+    color: var(--dust);
+    margin-top: 5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  /* Marker */
   .day-marker {
-    background: white; border-radius: 50%;
-    width: 30px; height: 30px;
+    background: var(--paper);
+    border-radius: 50%;
+    width: 26px; height: 26px;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 11px; color: #666;
-    border: 2px solid #ccc;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    transition: all 0.2s;
+    font-family: var(--font-serif);
+    font-weight: 500; font-size: 12px;
+    color: var(--ink-2);
+    border: 1.5px solid var(--dust);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
   }
   .day-marker.active {
     transform: scale(1.5);
-    border-width: 3px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
     z-index: 999;
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
   }
-  .day-marker.outbound { border-color: #FF6B35; color: #FF6B35; }
-  .day-marker.loop { border-color: #3B82F6; color: #3B82F6; }
-  .day-marker.return { border-color: #F59E0B; color: #F59E0B; }
-  .day-marker.active.outbound { background: #FF6B35; color: white; }
-  .day-marker.active.loop { background: #3B82F6; color: white; }
-  .day-marker.active.return { background: #F59E0B; color: white; }
-
-  .title-bar {
-    position: absolute; top: 10px; left: 10px;
-    background: rgba(255,255,255,0.96); padding: 7px 11px;
-    border-radius: 10px; font-size: 12px; font-weight: 600;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 500;
+  .day-marker.outbound { border-color: var(--moss); color: var(--moss); }
+  .day-marker.loop     { border-color: var(--maple); color: var(--maple); }
+  .day-marker.return   { border-color: var(--amber); color: var(--amber); }
+  .day-marker.start {
+    background: var(--ink); color: var(--paper);
+    border-color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    width: 34px; height: 34px;
   }
-  .title-bar .sub { font-size: 10px; font-weight: 400; color: #666; margin-top: 2px; }
 
-  /* 底部详情+切换器 */
+  /* 底部 */
   #bottom {
     position: absolute; bottom: 0; left: 0; right: 0;
-    height: 260px; background: white; z-index: 1000;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    height: 320px; background: var(--paper); z-index: 1000;
+    box-shadow: 0 -1px 0 var(--line), 0 -8px 32px rgba(26,31,26,0.06);
     display: flex; flex-direction: column;
   }
 
-  /* 日期切换器 */
+  /* Day 切换器 */
   #day-switcher {
     display: flex; overflow-x: auto; overflow-y: hidden;
-    padding: 10px 12px; gap: 6px;
-    border-bottom: 1px solid #eee;
+    padding: 14px 16px 10px;
+    gap: 4px;
+    border-bottom: 1px solid var(--line-2);
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
     flex-shrink: 0;
   }
   #day-switcher::-webkit-scrollbar { display: none; }
   .day-chip {
     flex-shrink: 0;
-    padding: 6px 12px;
-    border-radius: 16px;
-    background: #f0f0f2;
-    font-size: 12px;
-    color: #666;
+    padding: 7px 14px;
+    font-family: var(--font-serif);
+    font-size: 13px;
+    color: var(--dust);
     cursor: pointer;
     white-space: nowrap;
-    border: 2px solid transparent;
-    transition: all 0.15s;
-    font-weight: 500;
+    border: none;
+    background: transparent;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    border-bottom: 1.5px solid transparent;
+    position: relative;
+    font-weight: 400;
   }
-  .day-chip:hover { background: #e5e5e7; }
+  .day-chip:hover { color: var(--ink); }
   .day-chip.active {
-    background: #FF6B35; color: white; border-color: #FF6B35;
-    font-weight: 600;
+    color: var(--ink);
+    font-weight: 500;
+    border-bottom-color: var(--ink);
   }
-  .day-chip.active.loop { background: #3B82F6; border-color: #3B82F6; }
-  .day-chip.active.return { background: #F59E0B; border-color: #F59E0B; }
+  .day-chip .sub {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 9px;
+    color: var(--dust);
+    margin-top: 1px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+  .day-chip.active .sub { color: var(--ink-2); }
 
-  /* 详情区 */
+  .day-chip.overview {
+    font-style: italic;
+    padding-right: 18px;
+    margin-right: 4px;
+    border-right: 1px solid var(--line);
+  }
+
+  /* 详情 */
   #detail {
     flex: 1;
     overflow-y: auto;
-    padding: 12px 16px 16px;
+    padding: 20px 22px 26px;
     -webkit-overflow-scrolling: touch;
   }
   #detail h2 {
-    margin: 0 0 2px 0; font-size: 17px; color: #1a1a1a; font-weight: 700;
+    margin: 0 0 4px 0;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  #detail h2 .day-num {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--dust);
+    font-size: 20px;
+    margin-right: 8px;
   }
   #detail .date-drive {
-    color: #888; font-size: 12px; margin-bottom: 12px;
-    display: flex; gap: 12px; align-items: center;
+    color: var(--dust);
+    font-size: 11px;
+    margin-bottom: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 400;
   }
-  #detail .drive-tag {
-    background: #FFF4EE; color: #C2410C; padding: 2px 8px;
-    border-radius: 10px; font-size: 11px; font-weight: 500;
+  #detail .date-drive .drive {
+    color: var(--ink-2);
   }
   #detail .activity {
-    margin-bottom: 12px; padding-bottom: 12px;
-    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-2);
   }
-  #detail .activity:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  #detail .activity:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 4px; }
   #detail .activity .name {
-    font-weight: 600; font-size: 14px; color: #1a1a1a; margin-bottom: 4px;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
   }
   #detail .activity .why {
-    font-size: 13px; line-height: 1.6; color: #555;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--ink-2);
+    letter-spacing: 0.005em;
+  }
+
+  /* 总览模式 */
+  #detail.overview-mode h2 {
+    font-size: 26px;
+    font-style: italic;
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+  #detail.overview-mode .subtitle {
+    color: var(--dust);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  #detail.overview-mode .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+  #detail.overview-mode .stat .num {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  #detail.overview-mode .stat .num .unit {
+    font-size: 13px;
+    color: var(--dust);
+    margin-left: 3px;
+    letter-spacing: 0;
+  }
+  #detail.overview-mode .stat .label {
+    font-size: 10px;
+    color: var(--dust);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+  }
+  #detail.overview-mode .cities-title {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    color: var(--dust);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  #detail.overview-mode .cities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-bottom: 20px;
+  }
+  #detail.overview-mode .city {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    color: var(--ink);
+  }
+  #detail.overview-mode .city .nights {
+    color: var(--dust);
+    font-size: 10px;
+    margin-left: 2px;
+    font-family: var(--font-sans);
+    letter-spacing: 0.05em;
+  }
+  #detail.overview-mode .city + .city::before {
+    content: '·';
+    color: var(--dust);
+    margin-right: 10px;
+  }
+  #detail.overview-mode .legend-row {
+    display: flex;
+    gap: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-2);
+    font-size: 11px;
+    color: var(--dust);
+    letter-spacing: 0.05em;
+  }
+  #detail.overview-mode .legend-row .item {
+    display: flex; align-items: center; gap: 5px;
+  }
+  #detail.overview-mode .legend-row .swatch {
+    width: 16px; height: 2px;
   }
 
   @media (max-width: 480px) {
-    #map { bottom: 260px; }
-    .title-bar { font-size: 11px; padding: 6px 9px; }
+    #map { bottom: 320px; }
+    #detail { padding: 18px 18px 22px; }
+    #detail.overview-mode .stats { gap: 12px; }
+    #detail.overview-mode .stat .num { font-size: 24px; }
   }
 </style>
 </head>
@@ -118,8 +328,8 @@
 <div id="map"></div>
 
 <div class="title-bar">
-  🏔️ 内蒙古自驾游 2026-10
-  <div class="sub">9/19 – 10/3 · 15 天 · ~5000 km</div>
+  <div class="brand">内蒙古自驾 · <em>秋 2026</em></div>
+  <div class="sub">Sep 19 — Oct 3 · Dalian ↺ Hulunbuir</div>
 </div>
 
 <div id="bottom">
@@ -129,20 +339,34 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const PHASE_COLORS = { outbound: '#FF6B35', loop: '#3B82F6', return: '#F59E0B' };
+const COLORS = {
+  outbound: '#4a5d3a',  // moss
+  loop:     '#b8593b',  // maple
+  return:   '#a8823a',  // amber
+};
 
-// 东北+内蒙区域
+// 东北+内蒙区域 bounds — 也是"总览"视图
 const REGION_BOUNDS = [[38.5, 117.0], [52.0, 126.0]];
 
 const map = L.map('map', {
-  zoomControl: true,
+  zoomControl: false,
   attributionControl: false,
   minZoom: 5, maxZoom: 12,
 }).fitBounds(REGION_BOUNDS);
 
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// 用 CartoDB Positron 更素雅的底图（灰白+浅色）
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  subdomains: 'abcd',
+  maxZoom: 18,
+}).addTo(map);
+
+// 中文地名叠一层
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
   subdomains: '1234',
   maxZoom: 18,
+  opacity: 0.45,
 }).addTo(map);
 
 const switcher = document.getElementById('day-switcher');
@@ -151,43 +375,96 @@ let allSegments = [];
 let allDays = [];
 let markers = [];
 let polylines = [];
-let currentDay = null;
+
+const OVERVIEW = {
+  totalKm: 5000,
+  totalDays: 15,
+  cities: [
+    { name: '大连', nights: '始终' },
+    { name: '通辽', nights: '1晚' },
+    { name: '阿尔山', nights: '2晚' },
+    { name: '满洲里', nights: '2晚' },
+    { name: '额尔古纳', nights: '2晚' },
+    { name: '莫尔道嘎', nights: '1晚' },
+    { name: '室韦', nights: '1晚' },
+    { name: '海拉尔', nights: '2晚' },
+    { name: '齐齐哈尔', nights: '1晚' },
+    { name: '长春', nights: '1晚' },
+    { name: '盘锦', nights: '1晚' },
+  ],
+};
+
+function renderOverview() {
+  // chips
+  document.querySelectorAll('.day-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.day === 'overview');
+  });
+  // markers 全部还原
+  markers.forEach(m => {
+    const el = m.getElement()?.querySelector('.day-marker');
+    if (el) el.classList.remove('active');
+  });
+  // polyline 全部高亮
+  polylines.forEach(pl => pl.setStyle({ opacity: 0.85, weight: 3.5 }));
+  // 地图缩到总览
+  map.flyToBounds(REGION_BOUNDS, { duration: 0.8, padding: [20, 20] });
+
+  detail.className = 'overview-mode';
+  detail.innerHTML = `
+    <h2>行程总览</h2>
+    <div class="subtitle">Grand Route · 大兴安岭 & 呼伦贝尔</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="num">${OVERVIEW.totalDays}<span class="unit">天</span></div>
+        <div class="label">Days</div>
+      </div>
+      <div class="stat">
+        <div class="num">${OVERVIEW.totalKm.toLocaleString()}<span class="unit">km</span></div>
+        <div class="label">Distance</div>
+      </div>
+      <div class="stat">
+        <div class="num">${OVERVIEW.cities.length - 1}<span class="unit">城</span></div>
+        <div class="label">Stops</div>
+      </div>
+    </div>
+    <div class="cities-title">Overnight Cities</div>
+    <div class="cities">
+      ${OVERVIEW.cities.map(c => `<span class="city">${c.name}<span class="nights">·${c.nights}</span></span>`).join('')}
+    </div>
+    <div class="legend-row">
+      <div class="item"><div class="swatch" style="background:#4a5d3a"></div>去程</div>
+      <div class="item"><div class="swatch" style="background:#b8593b"></div>环线</div>
+      <div class="item"><div class="swatch" style="background:#a8823a"></div>回程</div>
+      <div class="item"><div class="swatch" style="background:#8a8578;height:0;border-top:2px dashed #8a8578"></div>边境估算</div>
+    </div>
+  `;
+  detail.scrollTop = 0;
+}
 
 function renderDay(day) {
-  currentDay = day.day;
-
-  // 更新 chip
   document.querySelectorAll('.day-chip').forEach(chip => {
-    chip.classList.remove('active', 'outbound', 'loop', 'return');
-    if (parseInt(chip.dataset.day) === day.day) {
-      chip.classList.add('active', day.phase);
-    }
+    chip.classList.toggle('active', chip.dataset.day === String(day.day));
   });
-
-  // 更新 marker
   markers.forEach((m, i) => {
     const el = m.getElement()?.querySelector('.day-marker');
-    if (!el) return;
-    el.classList.toggle('active', allDays[i].day === day.day);
+    if (el) el.classList.toggle('active', allDays[i].day === day.day);
   });
-
-  // 更新 polyline 透明度：只高亮当前 day 或前一天的路段
   polylines.forEach((pl, i) => {
     const seg = allSegments[i];
     const segDayNum = parseInt(seg.day_label.replace('Day ', ''));
     if (segDayNum === day.day) {
       pl.setStyle({ opacity: 1, weight: 5 });
     } else {
-      pl.setStyle({ opacity: 0.25, weight: 3 });
+      pl.setStyle({ opacity: 0.18, weight: 2.5 });
     }
   });
 
-  // 详情区
-  const html = `
-    <h2>Day ${day.day}: ${day.title}</h2>
+  detail.className = '';
+  detail.innerHTML = `
+    <h2><span class="day-num">Day ${day.day}</span>${day.title}</h2>
     <div class="date-drive">
       <span>${day.date}</span>
-      <span class="drive-tag">🚗 ${day.drive}</span>
+      <span class="drive">${day.drive}</span>
     </div>
     ${day.activities.map(a => `
       <div class="activity">
@@ -196,10 +473,7 @@ function renderDay(day) {
       </div>
     `).join('')}
   `;
-  detail.innerHTML = html;
   detail.scrollTop = 0;
-
-  // 地图飞到该点
   map.flyTo([day.lat, day.lng], 7, { duration: 0.8 });
 }
 
@@ -207,22 +481,19 @@ fetch('routes.json').then(r => r.json()).then(data => {
   allSegments = data.segments;
   allDays = data.days;
 
-  // 路线
   data.segments.forEach(seg => {
-    const color = PHASE_COLORS[seg.phase] || '#666';
+    const color = COLORS[seg.phase] || '#666';
     const pts = seg.polyline.map(p => [p[0], p[1]]);
-    const opts = { color: color, weight: 4, opacity: 0.85 };
-    if (seg.fallback) { opts.dashArray = '8, 8'; opts.opacity = 0.55; }
-    const pl = L.polyline(pts, opts).addTo(map);
-    polylines.push(pl);
+    const opts = { color: color, weight: 3.5, opacity: 0.85, lineCap: 'round', lineJoin: 'round' };
+    if (seg.fallback) { opts.dashArray = '6, 8'; opts.opacity = 0.6; }
+    polylines.push(L.polyline(pts, opts).addTo(map));
   });
 
-  // 每日 marker
   data.days.forEach(day => {
     const icon = L.divIcon({
       className: '',
-      html: `<div class="day-marker ${day.phase}">D${day.day}</div>`,
-      iconSize: [30, 30], iconAnchor: [15, 15]
+      html: `<div class="day-marker ${day.phase}">${day.day}</div>`,
+      iconSize: [26, 26], iconAnchor: [13, 13]
     });
     const m = L.marker([day.lat, day.lng], { icon }).addTo(map);
     m.on('click', () => renderDay(day));
@@ -232,17 +503,29 @@ fetch('routes.json').then(r => r.json()).then(data => {
   // 大连起点
   const startIcon = L.divIcon({
     className: '',
-    html: `<div class="day-marker" style="background:#10B981;color:white;border-color:#10B981;font-size:10px">起点</div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18]
+    html: `<div class="day-marker start">DL</div>`,
+    iconSize: [34, 34], iconAnchor: [17, 17]
   });
   L.marker([38.913962, 121.614786], { icon: startIcon }).addTo(map);
 
-  // 日期切换器 chips
+  // 总览 chip
+  const overviewChip = document.createElement('button');
+  overviewChip.className = 'day-chip overview active';
+  overviewChip.dataset.day = 'overview';
+  overviewChip.innerHTML = `总览<span class="sub">Overview</span>`;
+  overviewChip.addEventListener('click', () => {
+    renderOverview();
+    overviewChip.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+  });
+  switcher.appendChild(overviewChip);
+
+  // 每天 chip
   data.days.forEach(day => {
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
     chip.className = 'day-chip';
-    chip.dataset.day = day.day;
-    chip.textContent = `D${day.day} ${day.date.split(' ')[0]}`;
+    chip.dataset.day = String(day.day);
+    const dateShort = day.date.split(' ')[0];
+    chip.innerHTML = `Day ${day.day}<span class="sub">${dateShort}</span>`;
     chip.addEventListener('click', () => {
       renderDay(day);
       chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
@@ -250,8 +533,8 @@ fetch('routes.json').then(r => r.json()).then(data => {
     switcher.appendChild(chip);
   });
 
-  // 默认显示 Day 1
-  renderDay(data.days[0]);
+  // 默认打开总览
+  renderOverview();
 });
 </script>
 </body>
