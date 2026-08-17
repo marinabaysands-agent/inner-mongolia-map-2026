@@ -224,6 +224,21 @@
     color: var(--ink-2);
     letter-spacing: 0.005em;
   }
+  #detail .lodging {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 14px;
+    background: #f3f0e8;
+    border: 1px solid #e4dfd3;
+  }
+  #detail .lodging .eyebrow { font-size: 11px; letter-spacing: .08em; color: #8a7b5b; text-transform: uppercase; }
+  #detail .lodging .hotel-name { margin-top: 5px; font-size: 16px; font-weight: 650; color: #292821; }
+  #detail .lodging .hotel-meta, #detail .lodging .hotel-address { margin-top: 5px; font-size: 12px; line-height: 1.55; color: #6d6a62; }
+  #detail .lodging .hotel-actions { display: flex; gap: 8px; margin-top: 11px; }
+  #detail .lodging button, #detail .lodging a {
+    appearance: none; border: 1px solid #d4cdbd; border-radius: 9px; background: #fff;
+    padding: 8px 10px; color: #4a5d3a; font: inherit; font-size: 12px; text-decoration: none; cursor: pointer;
+  }
 
   /* 总览模式 */
   #detail.overview-mode h2 {
@@ -377,18 +392,17 @@ let markers = [];
 let polylines = [];
 
 const OVERVIEW = {
-  totalKm: 4439,
-  totalDays: 16,
+  totalKm: 4337,
+  totalDays: 13,
   cities: [
-    { name: '大连', nights: '始终' },
-    { name: '鞍山', nights: '1晚' },
-    { name: '白城', nights: '1晚' },
-    { name: '阿尔山', nights: '2晚' },
-    { name: '满洲里', nights: '3晚 🖥️' },
-    { name: '额尔古纳', nights: '2晚' },
-    { name: '莫尔道嘎', nights: '1晚' },
-    { name: '室韦', nights: '1晚' },
-    { name: '海拉尔', nights: '2晚' },
+    { name: '大连', nights: '起终点' },
+    { name: '通辽', nights: '1晚' },
+    { name: '阿尔山市区', nights: '1晚' },
+    { name: '阿尔山森林公园', nights: '2晚 ✅' },
+    { name: '满洲里', nights: '2晚' },
+    { name: '额尔古纳', nights: '1晚' },
+    { name: '莫尔道嘎', nights: '2晚' },
+    { name: '海拉尔', nights: '1晚' },
     { name: '齐齐哈尔', nights: '1晚' },
     { name: '长春', nights: '1晚' },
   ],
@@ -441,6 +455,17 @@ function renderOverview() {
   detail.scrollTop = 0;
 }
 
+async function copyHotelAddress(button, address) {
+  try {
+    await navigator.clipboard.writeText(address);
+    const old = button.textContent;
+    button.textContent = '已复制';
+    setTimeout(() => { button.textContent = old; }, 1200);
+  } catch (_) {
+    window.prompt('复制酒店地址', address);
+  }
+}
+
 function renderDay(day) {
   document.querySelectorAll('.day-chip').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.day === String(day.day));
@@ -472,6 +497,19 @@ function renderDay(day) {
         <div class="why">${a.why}</div>
       </div>
     `).join('')}
+    ${day.lodging ? `
+      <div class="lodging">
+        <div class="eyebrow">Hotel · 已预订</div>
+        <div class="hotel-name">${day.lodging.name}</div>
+        <div class="hotel-meta">${day.lodging.dates} · ${day.lodging.room} · ${day.lodging.price}</div>
+        <div class="hotel-address">${day.lodging.address}</div>
+        ${day.lodging.note ? `<div class="hotel-address">⚠️ ${day.lodging.note}</div>` : ''}
+        <div class="hotel-actions">
+          <button type="button" onclick="copyHotelAddress(this, '${day.lodging.address}')">复制地址</button>
+          <a href="${day.lodging.mapUrl}" target="_blank" rel="noopener">打开地图</a>
+        </div>
+      </div>
+    ` : ''}
   `;
   detail.scrollTop = 0;
   map.flyTo([day.lat, day.lng], 7, { duration: 0.8 });
