@@ -371,11 +371,11 @@ const map = L.map('map', {
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// CartoDB Positron 提供免密钥的素雅底图与地名，避免第三方图层的 API key 水印。
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  subdomains: 'abcd',
-  maxZoom: 18,
-  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+// OpenStreetMap 标准图层无需 API key，并保留本地语言地名。
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  subdomains: 'abc',
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors',
 }).addTo(map);
 
 const switcher = document.getElementById('day-switcher');
