@@ -224,6 +224,17 @@
     color: var(--ink-2);
     letter-spacing: 0.005em;
   }
+  #detail .activity .map-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 8px;
+    color: #4a5d3a;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+  }
+  #detail .activity .map-link:hover { text-decoration: underline; }
   #detail .lodging {
     margin-top: 16px;
     padding: 14px;
@@ -489,6 +500,7 @@ function renderDay(day) {
       <div class="activity">
         <div class="name">${a.name}</div>
         <div class="why">${a.why}</div>
+        ${a.mapUrl ? `<a class="map-link" href="${a.mapUrl}" target="_blank" rel="noopener">高德地图 ↗</a>` : ''}
       </div>
     `).join('')}
     ${day.lodging ? `
