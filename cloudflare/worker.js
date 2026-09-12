@@ -61,7 +61,7 @@ function securedResponse(upstream, pathname) {
   headers.delete("Set-Cookie");
   headers.delete("Content-Security-Policy-Report-Only");
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
-  headers.set("Cache-Control", `public, max-age=0, s-maxage=${cacheTtl(pathname)}, must-revalidate`);
+  headers.set("Cache-Control", `public, max-age=0, s-maxage=${cacheTtl(pathname)}, must-revalidate, no-transform`);
   return new Response(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
