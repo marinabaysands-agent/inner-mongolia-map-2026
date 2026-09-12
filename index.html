@@ -281,6 +281,111 @@
     letter-spacing: 0.02em;
   }
   #detail .activity .map-link:hover { text-decoration: underline; }
+  #detail .navigation-section {
+    margin: 2px 0 18px;
+    padding: 15px;
+    border: 1px solid rgba(74,93,58,0.16);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.42);
+  }
+  #detail .navigation-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 7px;
+  }
+  #detail .navigation-header h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  #detail .navigation-count {
+    flex: 0 0 auto;
+    color: var(--dust);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+  #detail .navigation-sequence,
+  #detail .navigation-note {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  #detail .navigation-sequence {
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  #detail .navigation-note { margin-bottom: 12px; }
+  #detail .navigation-sequence strong { font-weight: 650; }
+  #detail .navigation-list {
+    display: grid;
+    gap: 8px;
+  }
+  #detail .navigation-point {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 10px 11px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    background: rgba(246,242,234,0.72);
+  }
+  #detail .navigation-copy {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+  #detail .navigation-role {
+    margin-bottom: 2px;
+    color: var(--dust);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  #detail .navigation-name {
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  #detail .navigation-meta {
+    margin-top: 3px;
+    color: var(--dust);
+    font-size: 10px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  #detail .navigation-link,
+  #detail .navigation-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 44px;
+    border-radius: 9px;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  #detail .navigation-link {
+    border: 1px solid rgba(74,93,58,0.28);
+    background: #fff;
+    color: var(--moss);
+  }
+  #detail .navigation-link:hover { text-decoration: underline; }
+  #detail .navigation-status {
+    border: 1px solid rgba(168,130,58,0.24);
+    background: rgba(168,130,58,0.08);
+    color: #806523;
+  }
   #detail .lodging {
     margin-top: 16px;
     padding: 14px;
@@ -393,6 +498,10 @@
     #detail { padding: 18px 18px 22px; }
     #detail.overview-mode .stats { gap: 12px; }
     #detail.overview-mode .stat .num { font-size: 24px; }
+    #detail .navigation-header { align-items: flex-start; flex-direction: column; gap: 3px; }
+    #detail .navigation-point { align-items: flex-start; flex-wrap: wrap; }
+    #detail .navigation-link,
+    #detail .navigation-status { width: 100%; text-align: center; }
   }
 </style>
 </head>
@@ -569,6 +678,56 @@ async function copyHotelAddress(button, address) {
   }
 }
 
+function getVerifiedNavigationPoint(point) {
+  const required = ['name', 'poiId', 'location', 'cityname', 'adname', 'address'];
+  if (point.verificationStatus !== 'verified' || required.some(key => !point[key])) return null;
+  const coordinates = String(point.location).split(',').map(Number);
+  if (coordinates.length !== 2 || coordinates.some(value => !Number.isFinite(value))) return null;
+  const [lng, lat] = coordinates;
+  if (lng < -180 || lng > 180 || lat < -90 || lat > 90) return null;
+  return { lng, lat };
+}
+
+function amapNavigationUrl(point, coordinates) {
+  const destination = encodeURIComponent(`${coordinates.lng},${coordinates.lat},${point.name}`);
+  return `https://uri.amap.com/navigation?to=${destination}&mode=car&policy=1&src=marina-inner-mongolia-2026&coordinate=gaode&callnative=1`;
+}
+
+function renderNavigationPoints(day) {
+  if (!Array.isArray(day.navigationPoints) || day.navigationPoints.length === 0) return '';
+  const verifiedCount = day.navigationPoints.filter(point => getVerifiedNavigationPoint(point)).length;
+  return `
+    <section class="navigation-section" aria-labelledby="navigation-day-${day.day}">
+      <div class="navigation-header">
+        <h3 id="navigation-day-${day.day}">可导航点</h3>
+        <span class="navigation-count">${verifiedCount}/${day.navigationPoints.length} 已通过高德 API 复核</span>
+      </div>
+      ${day.navigationSequence ? `<p class="navigation-sequence"><strong>建议执行：</strong>${day.navigationSequence}</p>` : ''}
+      <p class="navigation-note">${day.navigationNote}</p>
+      <div class="navigation-list">
+        ${day.navigationPoints.map(point => {
+          const coordinates = getVerifiedNavigationPoint(point);
+          const displayName = coordinates ? point.name : point.candidateName;
+          return `
+            <div class="navigation-point">
+              <div class="navigation-copy">
+                <div class="navigation-role">${point.role}</div>
+                <div class="navigation-name">${displayName}</div>
+                <div class="navigation-meta">${coordinates
+                  ? `${point.address} · ${point.adname}`
+                  : '候选名称 · 待高德 Web Service API 验证，暂不提供精确导航'}</div>
+              </div>
+              ${coordinates
+                ? `<a class="navigation-link" href="${amapNavigationUrl(point, coordinates)}" target="_blank" rel="noopener noreferrer">一键高德导航</a>`
+                : '<span class="navigation-status">待验证</span>'}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+}
+
 function renderDay(day) {
   document.querySelectorAll('.day-chip').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.day === String(day.day));
@@ -594,6 +753,7 @@ function renderDay(day) {
       <span>${day.date}</span>
       <span class="drive">${day.drive}</span>
     </div>
+    ${renderNavigationPoints(day)}
     ${day.activities.map(a => `
       <div class="activity">
         <div class="name">${a.name}</div>
