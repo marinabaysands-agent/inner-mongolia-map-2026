@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="地图底图加载失败时的本地图案">
+  <rect width="256" height="256" fill="#ebe6dc"/>
+  <g fill="none" stroke="#7b846f" stroke-opacity="0.18" stroke-width="1">
+    <path d="M-20 58C24 30 52 84 98 59s82-20 115 8 55 16 78-1"/>
+    <path d="M-26 150c42-35 77 8 118-11s72-43 115-16 62 25 84 5"/>
+    <path d="M18 275c10-45 55-38 69-75s8-77 51-86 55-44 51-79"/>
+  </g>
+  <g stroke="#1a1f1a" stroke-opacity="0.055" stroke-width="1">
+    <path d="M0 32h256M0 96h256M0 160h256M0 224h256"/>
+    <path d="M32 0v256M96 0v256M160 0v256M224 0v256"/>
+  </g>
+  <circle cx="62" cy="184" r="2.5" fill="#4a5d3a" fill-opacity="0.28"/>
+  <circle cx="198" cy="76" r="2.5" fill="#b8593b" fill-opacity="0.24"/>
+</svg>

@@ -4,11 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <title>内蒙古自驾游 · 秋 2026</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
 <style>
+  @font-face {
+    font-family: "Marina Sans SC";
+    src: url("./assets/fonts/noto-sans-sc-map-subset.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Marina Serif SC";
+    src: url("./assets/fonts/noto-serif-sc-map-subset.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+  }
+
   :root {
     /* 秋色 palette — 苔藓、燕麦、枫、暮云 */
     --ink:        #1a1f1a;    /* 深墨绿黑 */
@@ -22,8 +34,8 @@
     --line:       rgba(26,31,26,0.12);
     --line-2:     rgba(26,31,26,0.06);
 
-    --font-serif: 'Fraunces', 'Noto Serif SC', 'Songti SC', Georgia, serif;
-    --font-sans:  'Noto Sans SC', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    --font-serif: "Marina Serif SC", ui-serif, "Iowan Old Style", "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
+    --font-sans:  "Marina Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -38,7 +50,14 @@
 
   #map {
     position: absolute; top: 0; left: 0; right: 0; bottom: 320px;
-    z-index: 1; background: var(--paper);
+    z-index: 1;
+    background-color: #ebe6dc;
+    background-image:
+      radial-gradient(circle at 18% 24%, rgba(74,93,58,0.12) 0 2px, transparent 3px),
+      radial-gradient(circle at 72% 68%, rgba(184,89,59,0.10) 0 2px, transparent 3px),
+      linear-gradient(rgba(26,31,26,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,31,26,0.045) 1px, transparent 1px);
+    background-size: 96px 96px, 128px 128px, 32px 32px, 32px 32px;
   }
 
   /* 顶栏 */
@@ -73,6 +92,33 @@
     text-transform: uppercase;
     font-weight: 400;
   }
+
+  .map-status {
+    position: absolute;
+    top: 76px;
+    left: 14px;
+    z-index: 700;
+    max-width: min(320px, calc(100vw - 28px));
+    padding: 7px 10px;
+    border: 1px solid rgba(168,130,58,0.28);
+    border-radius: 2px;
+    background: rgba(246,242,234,0.94);
+    color: var(--ink-2);
+    box-shadow: 0 4px 16px rgba(26,31,26,0.08);
+    font-size: 11px;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    pointer-events: none;
+  }
+  .map-status[hidden] { display: none; }
+  .leaflet-control-attribution {
+    color: var(--ink-2);
+    background: rgba(246,242,234,0.90) !important;
+    font-family: var(--font-sans);
+  }
+  .leaflet-control-attribution a { color: var(--moss); }
 
   /* Marker */
   .day-marker {
@@ -357,13 +403,14 @@
   <div class="brand">内蒙古自驾 · <em>秋 2026</em></div>
   <div class="sub">Sep 23 — Oct 5 · 13 days · Dalian ↺ Hulunbuir</div>
 </div>
+<div id="map-status" class="map-status" role="status" aria-live="polite" hidden></div>
 
 <div id="bottom">
   <div id="day-switcher"></div>
   <div id="detail"></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./vendor/leaflet/leaflet.js"></script>
 <script>
 const COLORS = {
   outbound: '#4a5d3a',  // moss
@@ -381,13 +428,64 @@ const map = L.map('map', {
 }).fitBounds(REGION_BOUNDS);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.control.attribution({ position: 'bottomleft', prefix: false })
+  .addAttribution('<a href="https://www.amap.com/" target="_blank" rel="noopener">底图 © 高德地图</a> · GCJ-02')
+  .addTo(map);
 
-// OpenStreetMap 标准图层无需 API key，并保留本地语言地名。
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  subdomains: 'abc',
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap contributors',
-}).addTo(map);
+const mapStatus = document.getElementById('map-status');
+const tileState = { loaded: 0, failed: 0, timer: null };
+
+function showMapStatus(message) {
+  mapStatus.textContent = message;
+  mapStatus.hidden = false;
+}
+
+function hideMapStatus() {
+  mapStatus.hidden = true;
+  mapStatus.textContent = '';
+}
+
+function beginTileLoad() {
+  tileState.loaded = 0;
+  tileState.failed = 0;
+  clearTimeout(tileState.timer);
+  tileState.timer = setTimeout(() => {
+    if (tileState.loaded === 0) {
+      showMapStatus('底图加载较慢 · 路线与行程仍可查看');
+    }
+  }, 4500);
+}
+
+// 高德公开道路瓦片使用 GCJ-02，与 routes.json 中的高德路线坐标一致；不需要或暴露 API key。
+const baseTiles = L.tileLayer(
+  'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+  {
+    subdomains: ['1', '2', '3', '4'],
+    minZoom: 3,
+    maxZoom: 18,
+    errorTileUrl: './assets/map-fallback-tile.svg',
+  }
+);
+
+baseTiles.on('loading', beginTileLoad);
+baseTiles.on('tileload', () => { tileState.loaded += 1; });
+baseTiles.on('tileerror', () => {
+  tileState.failed += 1;
+  showMapStatus(tileState.loaded > 0
+    ? '部分底图未加载 · 路线与行程仍可查看'
+    : '底图暂不可用 · 路线与行程仍可查看');
+});
+baseTiles.on('load', () => {
+  clearTimeout(tileState.timer);
+  if (tileState.failed === 0 && tileState.loaded > 0) {
+    hideMapStatus();
+  } else if (tileState.loaded > 0) {
+    showMapStatus('部分底图未加载 · 路线与行程仍可查看');
+  } else {
+    showMapStatus('底图暂不可用 · 路线与行程仍可查看');
+  }
+});
+baseTiles.addTo(map);
 
 const switcher = document.getElementById('day-switcher');
 const detail = document.getElementById('detail');
@@ -521,7 +619,12 @@ function renderDay(day) {
   map.flyTo([day.lat, day.lng], 7, { duration: 0.8 });
 }
 
-fetch('routes.json').then(r => r.json()).then(data => {
+fetch('./routes.json')
+  .then(r => {
+    if (!r.ok) throw new Error(`routes.json HTTP ${r.status}`);
+    return r.json();
+  })
+  .then(data => {
   allSegments = data.segments;
   allDays = data.days;
 
@@ -579,6 +682,14 @@ fetch('routes.json').then(r => r.json()).then(data => {
 
   // 默认打开总览
   renderOverview();
+}).catch(error => {
+  console.error('Failed to load routes.json', error);
+  showMapStatus('路线数据加载失败 · 请稍后重试');
+  detail.className = '';
+  detail.innerHTML = `
+    <h2>路线数据暂不可用</h2>
+    <div class="date-drive">请刷新页面后重试</div>
+  `;
 });
 </script>
 </body>
