@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="travel-map-version" content="v14">
 <title>内蒙古自驾游 · 秋 2026</title>
+<link rel="icon" href="./assets/map-fallback-tile.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
 <style>
   @font-face {
@@ -393,6 +395,13 @@
     background: #f3f0e8;
     border: 1px solid #e4dfd3;
   }
+  #detail .lodging.confirmed,
+  #detail .lodging.rescheduled {
+    background: #f0f3eb;
+    border-color: rgba(74,93,58,0.28);
+  }
+  #detail .lodging.confirmed .eyebrow,
+  #detail .lodging.rescheduled .eyebrow { color: var(--moss); }
   #detail .lodging .eyebrow { font-size: 11px; letter-spacing: .08em; color: #8a7b5b; text-transform: uppercase; }
   #detail .lodging .hotel-name { margin-top: 5px; font-size: 16px; font-weight: 650; color: #292821; }
   #detail .lodging .hotel-meta, #detail .lodging .hotel-address { margin-top: 5px; font-size: 12px; line-height: 1.55; color: #6d6a62; }
@@ -477,6 +486,13 @@
     color: var(--dust);
     margin-right: 10px;
   }
+  #detail.overview-mode .lodging-summary {
+    margin: -8px 0 18px;
+    color: var(--moss);
+    font-size: 11px;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
   #detail.overview-mode .legend-row {
     display: flex;
     gap: 16px;
@@ -510,7 +526,7 @@
 
 <div class="title-bar">
   <div class="brand">内蒙古自驾 · <em>秋 2026</em></div>
-  <div class="sub">Sep 23 — Oct 5 · 13 days · Dalian ↺ Hulunbuir</div>
+  <div class="sub">Sep 23 — Oct 6 · 14 days · Dalian ↺ Hulunbuir</div>
 </div>
 <div id="map-status" class="map-status" role="status" aria-live="polite" hidden></div>
 
@@ -605,7 +621,8 @@ let polylines = [];
 
 const OVERVIEW = {
   totalKm: 4206,
-  totalDays: 13,
+  totalDays: 14,
+  lodgingSummary: '住宿 13/13 晚已覆盖 · 齐齐哈尔日期已确认 · 四平已改期 · 两笔改后金额与条款待详情补录',
   cities: [
     { name: '大连', nights: '起终点' },
     { name: '通辽', nights: '1晚' },
@@ -615,8 +632,8 @@ const OVERVIEW = {
     { name: '额尔古纳', nights: '1晚' },
     { name: '莫尔道嘎', nights: '2晚' },
     { name: '海拉尔', nights: '1晚' },
-    { name: '齐齐哈尔', nights: '1晚' },
-    { name: '四平', nights: '1晚' },
+    { name: '齐齐哈尔', nights: '2晚 · 日期已确认' },
+    { name: '四平', nights: '1晚 · 已改期' },
   ],
 };
 
@@ -646,7 +663,7 @@ function renderOverview() {
       </div>
       <div class="stat">
         <div class="num">${OVERVIEW.totalKm.toLocaleString()}<span class="unit">km</span></div>
-        <div class="label">Distance</div>
+        <div class="label">Intercity</div>
       </div>
       <div class="stat">
         <div class="num">${OVERVIEW.cities.length - 1}<span class="unit">城</span></div>
@@ -657,6 +674,7 @@ function renderOverview() {
     <div class="cities">
       ${OVERVIEW.cities.map(c => `<span class="city">${c.name}<span class="nights">·${c.nights}</span></span>`).join('')}
     </div>
+    <div class="lodging-summary">${OVERVIEW.lodgingSummary}</div>
     <div class="legend-row">
       <div class="item"><div class="swatch" style="background:#4a5d3a"></div>去程</div>
       <div class="item"><div class="swatch" style="background:#b8593b"></div>环线</div>
@@ -691,6 +709,17 @@ function getVerifiedNavigationPoint(point) {
 function amapNavigationUrl(point, coordinates) {
   const destination = encodeURIComponent(`${coordinates.lng},${coordinates.lat},${point.name}`);
   return `https://uri.amap.com/navigation?to=${destination}&mode=car&policy=1&src=marina-inner-mongolia-2026&coordinate=gaode&callnative=1`;
+}
+
+const LODGING_STATUS = {
+  booked: '已预订',
+  confirmed: '日期已确认',
+  rescheduled: '已改期',
+};
+
+function getLodgingStatus(lodging) {
+  const key = lodging && Object.prototype.hasOwnProperty.call(LODGING_STATUS, lodging.status) ? lodging.status : 'booked';
+  return { key, label: LODGING_STATUS[key] };
 }
 
 function renderNavigationPoints(day) {
@@ -746,6 +775,7 @@ function renderDay(day) {
     }
   });
 
+  const lodgingStatus = getLodgingStatus(day.lodging);
   detail.className = '';
   detail.innerHTML = `
     <h2><span class="day-num">Day ${day.day}</span>${day.title}</h2>
@@ -762,8 +792,8 @@ function renderDay(day) {
       </div>
     `).join('')}
     ${day.lodging ? `
-      <div class="lodging">
-        <div class="eyebrow">Hotel · 已预订</div>
+      <div class="lodging ${lodgingStatus.key}">
+        <div class="eyebrow">Hotel · ${lodgingStatus.label}</div>
         <div class="hotel-name">${day.lodging.name}</div>
         <div class="hotel-meta">${day.lodging.dates} · ${day.lodging.room} · ${day.lodging.price}</div>
         <div class="hotel-address">${day.lodging.address}</div>

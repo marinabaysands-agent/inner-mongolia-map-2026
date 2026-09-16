@@ -1,4 +1,4 @@
-"""Refresh v11 driving geometry in routes.json without overwriting day details.
+"""Refresh v14 driving geometry in routes.json without overwriting day details.
 
 Usage:
   AMAP_API_KEY=*** python3 fetch_routes.py
@@ -37,8 +37,8 @@ SEGMENTS = [
     ("Day 8", "额尔古纳", "莫尔道嘎", ["根河"], "loop"),
     ("Day 10", "莫尔道嘎", "海拉尔", [], "return"),
     ("Day 11", "海拉尔", "齐齐哈尔", [], "return"),
-    ("Day 12", "齐齐哈尔", "四平", [], "return"),
-    ("Day 13", "四平", "大连", [], "return"),
+    ("Day 13", "齐齐哈尔", "四平", [], "return"),
+    ("Day 14", "四平", "大连", [], "return"),
 ]
 
 
@@ -79,7 +79,7 @@ def main():
         route = fetch(start, end, waypoints)
         route.update({"day_label": label, "from": start, "to": end, "waypoints": waypoints, "phase": phase})
         segments.append(route)
-    ROUTES_FILE.write_text(json.dumps({"segments": segments, "days": current["days"]}, ensure_ascii=False, separators=(",", ":")))
+    ROUTES_FILE.write_text(json.dumps({"meta": current.get("meta", {}), "segments": segments, "days": current["days"]}, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"Updated {ROUTES_FILE}; total {sum(x['distance_km'] for x in segments):.0f} km")
 
 
