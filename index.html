@@ -620,18 +620,18 @@ let markers = [];
 let polylines = [];
 
 const OVERVIEW = {
-  totalKm: 4206,
+  totalKm: 4179,
   totalDays: 14,
-  lodgingSummary: '住宿 13/13 晚已覆盖 · 齐齐哈尔日期已确认 · 四平已改期 · 两笔改后金额与条款待详情补录',
+  lodgingSummary: '9/29 更新 · 全程14天13晚 · 住宿11/13晚有已知覆盖；9/29根河、10/2额尔古纳两晚酒店名称、预订状态及金额待确认。齐齐哈尔、四平改后金额与条款待补。城际里程约4,179km，Day7/8/10/11已按9/29高德路线更新；以城市/景点参考点及莫尔道嘎已订民宿计算，不含酒店衔接、园内及市区游玩。',
   cities: [
     { name: '大连', nights: '起终点' },
     { name: '通辽', nights: '1晚' },
     { name: '阿尔山市区', nights: '1晚 ✅' },
     { name: '阿尔山森林公园', nights: '2晚 ✅' },
     { name: '满洲里', nights: '2晚' },
-    { name: '额尔古纳', nights: '1晚' },
+    { name: '根河/使鹿部落', nights: '1晚 · 酒店待确认' },
     { name: '莫尔道嘎', nights: '2晚' },
-    { name: '海拉尔', nights: '1晚' },
+    { name: '额尔古纳', nights: '1晚 · 酒店待确认' },
     { name: '齐齐哈尔', nights: '2晚 · 日期已确认' },
     { name: '四平', nights: '1晚 · 已改期' },
   ],
@@ -679,7 +679,7 @@ function renderOverview() {
       <div class="item"><div class="swatch" style="background:#4a5d3a"></div>去程</div>
       <div class="item"><div class="swatch" style="background:#b8593b"></div>环线</div>
       <div class="item"><div class="swatch" style="background:#a8823a"></div>回程</div>
-      <div class="item"><div class="swatch" style="background:#8a8578;height:0;border-top:2px dashed #8a8578"></div>边境估算</div>
+      <div class="item">路线：高德参考</div>
     </div>
   `;
   detail.scrollTop = 0;
